@@ -1,12 +1,12 @@
 fn main() {
     let mut raw: u64 = 0b1001;
-    println!("    Raw  (2): {:064b}", raw);
+    println!("      Raw  (2): {:064b}", raw);
 
     let mut code = encode(&mut raw);
-    println!("Encoded: {:064b}", code);
+    println!("Encoded:\t{:064b}", code);
 
     let block = decode(&mut code);
-    println!("Decoded: {:064b}", block);
+    println!("Decoded:\t{:064b}", block);
 }
 
 fn encode(block: &mut u64) -> u64 {
@@ -32,38 +32,34 @@ fn encode(block: &mut u64) -> u64 {
         }
     }
 
-    // Set global parity bit P0
-    // This needs to be done last as it's a global parity
-    // check on the final result..
-    //
-    // TODO(JDB): See how to streamline this
-    //if parity(&encoded, 0) {
-    //    encoded |= 0b1
-    //}
-
     encoded
 }
 
 fn decode(code: &mut u64) -> u64 {
-    let len_power = 7;
-    let mut flipped_bit = -1i32;
+    let len_power = (2..).find(|&r| 2u32.pow(r) - r - 1 >= 32).unwrap();
+    let len = 2usize.pow(len_power);
 
-    let mut decoded = 0u64;
-
+    let mut check = 0b0;
     for i in 0..len_power {
-        if parity(&code, i) {
-            if flipped_bit != -1 {
-                *code ^= 0b1 << flipped_bit;
-            }
-
-            flipped_bit += 1;
-            *code ^= 0b1 << flipped_bit;
+        if !parity(&code, i) {
+            check |= 0b1 << i;
         }
     }
 
-    for i in 0..64 {
-        if (i & (i + 1)) != 0 {
-            decoded |= (0b1 << i) & *code;
+    // We have an error
+    if check > 0b0 {
+        *code ^= check;
+    }
+
+    // Drop all parity bits
+    let mut offset = 0;
+    let mut decoded = 0b0;
+
+    for i in 1..len {
+        if (i & (i - 1)) != 0 {
+            decoded |= ((0b1 << i - 1) & *code) >> offset;
+        } else {
+            offset += 1;
         }
     }
 
