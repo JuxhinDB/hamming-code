@@ -78,14 +78,47 @@ fn parity(code: &u64, i: u32) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::distributions::Uniform;
+    use rand::{thread_rng, Rng};
 
     #[test]
-    fn test_basic_code() {
-        let orig: u64 = 0b1001;
-        let mut raw: u64 = orig;
-        let mut code = encode(&mut raw);
-        let block = decode(&mut code);
+    fn test_dynamic_valid_code() {
+        let mut rng = rand::thread_rng();
 
-        assert_eq!(orig, block);
+        for _ in 1..4096 {
+            let orig = rng.sample(Uniform::new(2u64.pow(1), 2u64.pow(32)));
+            let mut raw: u64 = orig;
+            let mut code = encode(&mut raw);
+            let block = decode(&mut code);
+
+            assert_eq!(orig, block);
+        }
+    }
+
+    #[test]
+    fn test_dynamic_single_invalid_code() {
+        let mut rng = rand::thread_rng();
+
+        for _ in 1..4096 {
+            let orig = rng.sample(Uniform::new(2u64.pow(1), 2u64.pow(32)));
+
+            println!("orig: {:064b}", orig);
+            let mut raw: u64 = orig;
+
+            // Tamper with a 66.67% probability
+            if rng.gen_bool(2.0 / 3.0) {
+                let invalid_bit = rng.gen_range(0..63);
+                let mask: u64 = 0b1 << invalid_bit;
+
+                // Toggle that specific bit
+                raw ^= mask;
+            }
+
+            let mut code = encode(&mut raw);
+            let block = decode(&mut code);
+            println!("deco: {:064b}", block);
+
+            assert_eq!(orig, block);
+        }
     }
 }
