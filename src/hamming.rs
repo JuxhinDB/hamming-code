@@ -1,6 +1,6 @@
 pub fn encode(block: &mut u64) -> u64 {
-    let len_power = (2..).find(|&r| 2u32.pow(r) - r - 1 >= 32).unwrap();
-    let len = 2usize.pow(len_power);
+    let len_power = 6;
+    let len = 64;
 
     let mut code = 0u64;
 
@@ -13,15 +13,14 @@ pub fn encode(block: &mut u64) -> u64 {
         }
     }
 
-    let mut encoded = code;
     for i in 0..len_power {
         // If the parity check is odd, set the bit to 1 otherwise move on.
         if !parity(&code, i) {
-            encoded |= 0b1 << (2usize.pow(i) - 1);
+            code |= 0b1 << (2usize.pow(i) - 1);
         }
     }
 
-    encoded
+    code
 }
 
 pub fn decode(code: &mut u64) -> u64 {
