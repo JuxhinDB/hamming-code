@@ -16,7 +16,7 @@ pub fn encode(block: &mut u64) -> u64 {
     for i in 0..len_power {
         // If the parity check is odd, set the bit to 1 otherwise move on.
         if !parity(&code, i) {
-            code |= 0b1 << (2usize.pow(i) - 1);
+            code |= 0b1 << (2usize.pow(i));
         }
     }
 
@@ -58,12 +58,14 @@ pub fn parity(code: &u64, i: u32) -> bool {
     let mut parity = true;
     let mut j = (0b1 << i) - 1;
 
-    while j < 64 {
-        if (code & 0b1 << j) != 0b0 {
-            parity = !parity;
+    while j < 64 - i {
+        for k in 0..=i + 1 {
+            if (code & 0b1 << j + k) != 0b0 {
+                parity = !parity;
+            }
         }
 
-        j += j + 2 * (i + 1);
+        j += 2 * (i + 1);
     }
 
     parity
