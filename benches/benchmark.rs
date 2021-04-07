@@ -16,5 +16,5 @@ pub fn benchmark_decode(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, benchmark_encode, benchmark_decode);
+criterion_group!(benches, benchmark_encode);
 criterion_main!(benches);

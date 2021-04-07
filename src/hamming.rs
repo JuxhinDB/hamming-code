@@ -54,23 +54,18 @@ pub fn decode(code: &mut u64) -> u64 {
     decoded
 }
 
-fn parity(code: &u64, i: u32) -> bool {
-    let bi = (0b1 << i) - 1;
-    let (mut parity, mut ignore, mut counter) = (true, false, 0);
-    for j in bi..64 {
-        if !ignore && (code & 0b1 << j) != 0b0 {
+pub fn parity(code: &u64, i: u32) -> bool {
+    let mut parity = true;
+    let mut j = (0b1 << i) - 1;
+
+    while j < 64 {
+        if (code & 0b1 << j) != 0b0 {
             parity = !parity;
         }
 
-        counter += 1;
-        if counter >= 0b1 << i {
-            ignore = !ignore;
-            counter = 0;
-        }
+        j += j + 2 * (i + 1);
     }
 
-    // true if even
-    // false if odd
     parity
 }
 
@@ -78,7 +73,7 @@ fn parity(code: &u64, i: u32) -> bool {
 mod tests {
     use super::*;
     use rand::distributions::Uniform;
-    use rand::{thread_rng, Rng};
+    use rand::Rng;
 
     #[test]
     fn test_dynamic_valid_code() {
