@@ -34,17 +34,11 @@ pub fn decode(code: &mut u64) -> u64 {
     let mut check = 0b0;
 
     for i in 0..len_power {
-        let bit_position = 2u32.pow(i);
-
-        // If odd and the parity bit is not 1, then we have an error
-        let is_even = parity(&code, i);
-        let _code = *code & (0b1 << bit_position);
-
-        if is_even && _code != 0 || !is_even && _code == 0 {
-            check |= 0b1 << bit_position;
-        }    
+        if !parity(&code, i) {
+            check |= 0b1 << i;
+        }
     }
-
+    
     // We have an error
     if check > 0b0 {
         println!("error at bit: {}", check);
@@ -54,10 +48,11 @@ pub fn decode(code: &mut u64) -> u64 {
     // Drop all parity bits
     let mut offset = 0;
     let mut decoded = 0b0;
-
-    for i in 1..len {
-        if (i & (i - 1)) != 0 {
-            decoded |= ((0b1 << i - 1) & *code) >> offset;
+    
+    for i in 0..len {
+        // Check if `i` is not a power of 2
+        if (i != 0) && (i & (i - 1)) != 0 {
+            decoded |= ((0b1 << i) & *code) >> offset;
         } else {
             offset += 1;
         }
@@ -105,7 +100,7 @@ mod tests {
     use rand::Rng;
 
     #[test]
-    fn test_dynamic_valid_code() {
+    fn test_valid_code() {
         let mut rng = rand::thread_rng();
 
         for _ in 1..4096 {
@@ -119,7 +114,7 @@ mod tests {
     }
 
     #[test]
-    fn test_dynamic_single_invalid_code() {
+    fn test_invalid_code() {
         let mut rng = rand::thread_rng();
 
         for _ in 1..4096 {
