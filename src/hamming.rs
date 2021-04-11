@@ -18,7 +18,7 @@ pub fn encode(block: &mut u64) -> u64 {
         // If the parity check is odd, set the bit to 1 otherwise move on.
         if !parity(&code, i) {
             code |= 0b1 << (2usize.pow(i));
-        } 
+        }
     }
 
     // Set the global parity
@@ -38,7 +38,7 @@ pub fn decode(code: &mut u64) -> u64 {
             check |= 0b1 << i;
         }
     }
-    
+
     // We have an error
     if check > 0b0 {
         println!("error at bit: {}", check);
@@ -48,7 +48,7 @@ pub fn decode(code: &mut u64) -> u64 {
     // Drop all parity bits
     let mut offset = 0;
     let mut decoded = 0b0;
-    
+
     for i in 0..len {
         // Check if `i` is not a power of 2
         if (i != 0) && (i & (i - 1)) != 0 {
@@ -61,11 +61,11 @@ pub fn decode(code: &mut u64) -> u64 {
     decoded
 }
 
-/// Hacker's delight 2nd edition, p.96 
+/// Hacker's delight 2nd edition, p.96
 /// Henry S. Warren, Jr.
-pub const fn fast_parity(code: u64) -> u64 {
+pub fn fast_parity(code: u64) -> u64 {
     let mut y: u64 = code ^ (code >> 1);
-    
+
     y ^= y << 2;
     y ^= y << 4;
     y ^= y << 8;
@@ -73,6 +73,18 @@ pub const fn fast_parity(code: u64) -> u64 {
     y ^= y << 32;
 
     0b1 & y
+}
+
+pub fn slow_parity(code: u64) -> bool {
+    let mut parity = true;
+
+    for i in 0..63 {
+        if code & 0b1 << i != 0 {
+            parity = !parity;
+        }
+    }
+
+    parity
 }
 
 pub fn parity(code: &u64, i: u32) -> bool {
