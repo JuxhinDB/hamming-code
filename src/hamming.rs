@@ -64,13 +64,13 @@ pub fn decode(code: &mut u64) -> u64 {
 /// Hacker's delight 2nd edition, p.96
 /// Henry S. Warren, Jr.
 pub fn fast_parity(code: u64) -> u64 {
-    let mut y: u64 = code ^ (code << 1);
+    let mut y: u64 = code ^ (code >> 1);
 
-    y ^= y << 2;
-    y ^= y << 4;
-    y ^= y << 8;
-    y ^= y << 16;
-    y ^= y << 32;
+    y ^= y >> 2;
+    y ^= y >> 4;
+    y ^= y >> 8;
+    y ^= y >> 16;
+    y ^= y >> 32;
 
     0b1 & y
 }
@@ -114,19 +114,19 @@ mod tests {
     #[test]
     fn test_fast_parity() {
         let inputs = vec![
-            (1, 1),
-            (2, 0),
-            (67, 1),
-            (88, 0),
-            (1030, 0),
-            (4397, 1),
-            (9894, 0),
-            (2u64.pow(63), 0),
-            (2u64.pow(63) - 1, 1),
+            (1, 1u64.count_ones() % 2),
+            (2, 2u64.count_ones() % 2),
+            (67, 67u64.count_ones() % 2),
+            (88, 88u64.count_ones() % 2),
+            (1030, 1030u64.count_ones() % 2),
+            (4397, 4397u64.count_ones() % 2),
+            (9894, 9894u64.count_ones() % 2),
+            (2u64.pow(63), 2u64.pow(63).count_ones() % 2),
+            (2u64.pow(63) - 1, (2u64.pow(63) - 1).count_ones() % 2),
         ];
 
         for i in inputs.iter() {
-            assert_eq!(fast_parity(i.0), i.1);
+            assert_eq!(fast_parity(i.0), i.1 as u64);
         }
     }
 
