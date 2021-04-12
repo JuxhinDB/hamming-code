@@ -64,7 +64,7 @@ pub fn decode(code: &mut u64) -> u64 {
 /// Hacker's delight 2nd edition, p.96
 /// Henry S. Warren, Jr.
 pub fn fast_parity(code: u64) -> u64 {
-    let mut y: u64 = code ^ (code >> 1);
+    let mut y: u64 = code ^ (code << 1);
 
     y ^= y << 2;
     y ^= y << 4;
@@ -110,6 +110,25 @@ mod tests {
     use super::*;
     use rand::distributions::Uniform;
     use rand::Rng;
+
+    #[test]
+    fn test_fast_parity() {
+        let inputs = vec![
+            (1, 1),
+            (2, 0),
+            (67, 1),
+            (88, 0),
+            (1030, 0),
+            (4397, 1),
+            (9894, 0),
+            (2u64.pow(63), 0),
+            (2u64.pow(63) - 1, 1),
+        ];
+
+        for i in inputs.iter() {
+            assert_eq!(fast_parity(i.0), i.1);
+        }
+    }
 
     #[test]
     fn test_valid_code() {

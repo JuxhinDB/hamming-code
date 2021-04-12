@@ -6,6 +6,9 @@ edition = "2018"
 
 [dependencies]
 
+[profile.dev]
+opt-level = 0
+
 [profile.release]
 debug = true
 
