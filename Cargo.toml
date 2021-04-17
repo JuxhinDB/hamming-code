@@ -5,6 +5,7 @@ authors = ["Juxhin Dyrmishi Brigjaj<juxhinbox@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+rand = "0.8.3"
 
 [profile.dev]
 opt-level = 0
@@ -13,7 +14,6 @@ opt-level = 0
 debug = true
 
 [dev-dependencies]
-rand = "0.8.3"
 criterion = "0.3"
 
 [[bench]]
