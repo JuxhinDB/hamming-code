@@ -1,4 +1,4 @@
-pub fn encode(block: &mut u64) -> u64 {
+pub fn encode(mut block: u64) -> u64 {
     // TODO(jdb): assert length on block to be less the parity bits
     let len_power = 6;
     let len = 64;
@@ -8,15 +8,15 @@ pub fn encode(block: &mut u64) -> u64 {
     for i in 0..len {
         // Check if `i` is not a power of 2
         if (i != 0) && (i & (i - 1)) != 0 {
-            code |= (0b1 << i) & *block as u64;
+            code |= (0b1 << i) & block as u64;
         } else {
-            *block <<= 1;
+            block <<= 1;
         }
     }
 
     for i in 0..len_power {
         // If the parity check is odd, set the bit to 1 otherwise move on.
-        if !parity(&code, i) {
+        if !parity(code, i) {
             code |= 0b1 << (2usize.pow(i));
         }
     }
@@ -27,22 +27,22 @@ pub fn encode(block: &mut u64) -> u64 {
     code
 }
 
-pub fn decode(code: &mut u64) -> u64 {
+pub fn decode(mut code: u64) -> u64 {
     let len_power = 6;
     let len = 64;
 
     let mut check = 0b0;
 
     for i in 0..len_power {
-        if !parity(&code, i) {
+        if !parity(code, i) {
             check |= 0b1 << i;
         }
     }
 
     // We have an error
     if check > 0b0 {
-        println!("error at bit: {}", check);
-        *code ^= 0b1 << check;
+        //println!("error at bit: {}", check);
+        code ^= 0b1 << check;
     }
 
     // Drop all parity bits
@@ -52,7 +52,7 @@ pub fn decode(code: &mut u64) -> u64 {
     for i in 0..len {
         // Check if `i` is not a power of 2
         if (i != 0) && (i & (i - 1)) != 0 {
-            decoded |= ((0b1 << i) & *code) >> offset;
+            decoded |= ((0b1 << i) & code) >> offset;
         } else {
             offset += 1;
         }
@@ -87,7 +87,7 @@ pub fn slow_parity(code: u64) -> bool {
     parity
 }
 
-pub fn parity(code: &u64, i: u32) -> bool {
+pub fn parity(code: u64, i: u32) -> bool {
     let mut parity = true;
     let spread = 2u32.pow(i);
     let mut j = spread;
@@ -137,8 +137,8 @@ mod tests {
         for _ in 1..4096 {
             let orig = rng.sample(Uniform::new(2u64.pow(1), 2u64.pow(32)));
             let mut raw: u64 = orig;
-            let mut code = encode(&mut raw);
-            let block = decode(&mut code);
+            let mut code = encode(raw);
+            let block = decode(code);
 
             assert_eq!(orig, block);
         }
@@ -152,7 +152,7 @@ mod tests {
             let orig = rng.sample(Uniform::new(2u64.pow(1), 2u64.pow(32)));
 
             let mut raw: u64 = orig;
-            let mut code = encode(&mut raw);
+            let mut code = encode(raw);
 
             // Tamper with a 66.67% probability
             if rng.gen_bool(2.0 / 3.0) {
@@ -163,7 +163,7 @@ mod tests {
                 code ^= mask;
             }
 
-            let block = decode(&mut code);
+            let block = decode(code);
 
             assert_eq!(orig, block);
         }
