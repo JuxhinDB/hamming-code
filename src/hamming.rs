@@ -1,64 +1,47 @@
+const DATA_BITS: u64 = 57;
+const DATA_MASK: u64 = (1 << 57) - 1;
+const PARITY_BITS: u64 = 7;
+
 pub fn encode(mut block: u64) -> u64 {
-    // TODO(jdb): assert length on block to be less the parity bits
-    let len_power = 6;
-    let len = 64;
-
-    let mut code = 0u64;
-
-    for i in 0..len {
-        // Check if `i` is not a power of 2
-        if (i != 0) && (i & (i - 1)) != 0 {
-            code |= (0b1 << i) & block as u64;
-        } else {
-            block <<= 1;
-        }
-    }
-
-    for i in 0..len_power {
-        // If the parity check is odd, set the bit to 1 otherwise move on.
-        if !parity(code, i) {
-            code |= 0b1 << (2usize.pow(i));
-        }
-    }
-
-    // Set the global parity
-    code |= fast_parity(code);
-
-    code
+    // We put the parity bits at the top for performance reasons
+    
+    return (block & DATA_MASK) |
+           ((full_parity(block) as u64) << DATA_BITS);
 }
 
+const raw_to_hamming: [u8; 64] =
+    [ 3,  5,  6,  7,  9, 10, 11, 12,
+     13, 14, 15, 17, 18, 19, 20, 21,
+     22, 23, 24, 25, 26, 27, 28, 29,
+     30, 31, 33, 34, 35, 36, 37, 38,
+     39, 40, 41, 42, 43, 44, 45, 46,
+     47, 48, 49, 50, 51, 52, 53, 54,
+     55, 56, 57, 58, 59, 60, 61, 62,
+     63,  0,  1,  2,  4,  8, 16, 32];
+const hamming_to_raw: [u8; 64] = 
+    [57, 58, 59,  0, 60,  1,  2,  3,
+     61,  4,  5,  6,  7,  8,  9, 10,
+     62, 11, 12, 13, 14, 15, 16, 17,
+     18, 19, 20, 21, 22, 23, 24, 25,
+     63, 26, 27, 28, 29, 30, 31, 32,
+     33, 34, 35, 36, 37, 38, 39, 40,
+     41, 42, 43, 44, 45, 46, 47, 48,
+     49, 50, 51, 52, 53, 54, 55, 56];
+
+
+
+
 pub fn decode(mut code: u64) -> u64 {
-    let len_power = 6;
-    let len = 64;
-
-    let mut check = 0b0;
-
-    for i in 0..len_power {
-        if !parity(code, i) {
-            check |= 0b1 << i;
-        }
-    }
-
+    let check = (code >> DATA_BITS) as u8 ^ full_parity(code & DATA_MASK);
+    let parity = check & 0;
+    let check = check >> 1;
     // We have an error
     if check > 0b0 {
         //println!("error at bit: {}", check);
-        code ^= 0b1 << check;
+        code ^= 0b1 << hamming_to_raw[check as usize] as u64;
     }
 
-    // Drop all parity bits
-    let mut offset = 0;
-    let mut decoded = 0b0;
-
-    for i in 0..len {
-        // Check if `i` is not a power of 2
-        if (i != 0) && (i & (i - 1)) != 0 {
-            decoded |= ((0b1 << i) & code) >> offset;
-        } else {
-            offset += 1;
-        }
-    }
-
-    decoded
+    code & DATA_MASK
 }
 
 /// Hacker's delight 2nd edition, p.96
@@ -73,6 +56,26 @@ pub fn fast_parity(code: u64) -> u64 {
     y ^= y >> 32;
 
     0b1 & y
+}
+
+pub fn full_parity(code: u64) -> u8 {
+    // We can actually do this 8 bits at a time, by storing the check values for each bit in a packed u64,
+    // anding that with ((bitset << 8) - bitset, with only the low bit set in each byte of bitset
+
+    
+    // Bits 0, 1, and 2 of the putative check word are parity bits, so the first bit is logically bit 3
+    let mut dv = 3;
+    let mut check = 0;
+    for i in 0..(DATA_BITS as u8) {
+        let mut bitno = i + dv;
+        if bitno & (bitno - 1) == 0 {
+            bitno += 1;
+            dv += 1;
+        }
+        check ^= if code & (1 << i) != 0 { (bitno << 1) | 1 } else { 0 };
+    }
+
+    return check;
 }
 
 pub fn slow_parity(code: u64) -> bool {
@@ -136,8 +139,8 @@ mod tests {
 
         for _ in 1..4096 {
             let orig = rng.sample(Uniform::new(2u64.pow(1), 2u64.pow(32)));
-            let mut raw: u64 = orig;
-            let mut code = encode(raw);
+            let raw: u64 = orig;
+            let code = encode(raw);
             let block = decode(code);
 
             assert_eq!(orig, block);
@@ -151,7 +154,7 @@ mod tests {
         for _ in 1..4096 {
             let orig = rng.sample(Uniform::new(2u64.pow(1), 2u64.pow(32)));
 
-            let mut raw: u64 = orig;
+            let raw: u64 = orig;
             let mut code = encode(raw);
 
             // Tamper with a 66.67% probability
