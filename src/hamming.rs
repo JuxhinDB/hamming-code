@@ -58,24 +58,35 @@ pub fn fast_parity(code: u64) -> u64 {
     0b1 & y
 }
 
+const PARITY_WIDE: [u64; 8] = [
+    0x7f6f5f4f3d2d1b07,
+    0x017161513f2f1d0b,
+    0x0373635343311f0d,
+    0x057565554533230f,
+    0x0977675747352513,
+    0x1179695949372715,
+    0x217b6b5b4b392917,
+    0x417d6d5d4d3b2b19,
+];
+
 pub fn full_parity(code: u64) -> u8 {
     // We can actually do this 8 bits at a time, by storing the check values for each bit in a packed u64,
     // anding that with ((bitset << 8) - bitset, with only the low bit set in each byte of bitset
 
     
     // Bits 0, 1, and 2 of the putative check word are parity bits, so the first bit is logically bit 3
-    let mut dv = 3;
     let mut check = 0;
-    for i in 0..(DATA_BITS as u8) {
-        let mut bitno = i + dv;
-        if bitno & (bitno - 1) == 0 {
-            bitno += 1;
-            dv += 1;
-        }
-        check ^= if code & (1 << i) != 0 { (bitno << 1) | 1 } else { 0 };
+    for i in 0..8 {
+        let bitset = 0x01010101_01010101 & (code >> i);
+        let code_part = u64::wrapping_sub(bitset << 8, bitset) & PARITY_WIDE[i];
+        check ^= code_part;
     }
 
-    return check;
+    check ^= check >> 32;
+    check ^= check >> 16;
+    check ^= check >> 8;
+
+    return (check & 0xFF) as u8;
 }
 
 pub fn slow_parity(code: u64) -> bool {
