@@ -32,10 +32,10 @@ fn main() -> std::io::Result<()> {
         }
 
         let original = u64::from_le_bytes(buffer);
-        let mut block = original;
+        let block = original;
         println!("Block:   {:064b}", block);
 
-        let mut encoded = encode(&mut block);
+        let mut encoded = encode(block);
         println!("Encoded: {:064b}", encoded);
 
         if rng.gen_bool(2.0 / 3.0) {
@@ -50,7 +50,7 @@ fn main() -> std::io::Result<()> {
             noisy_bytes.push(encoded.to_le_bytes());
         }
 
-        let decoded = decode(&mut encoded);
+        let decoded = decode(encoded);
         println!("Decoded: {:064b}", decoded);
 
         println!("Match?   {}\n", original == decoded);
